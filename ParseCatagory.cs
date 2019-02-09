@@ -88,7 +88,7 @@ public class ParseCatagory : MonoBehaviour {
    public void btnclick(string name)
     {
         PlayerPrefs.SetString("saveName", name);
-        SceneManager.LoadScene("subCatagoryScene");
+        SceneManager.LoadScene("02-Subcatagory");
         
 
     }

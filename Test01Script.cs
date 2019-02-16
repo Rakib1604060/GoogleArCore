@@ -1,5 +1,4 @@
 ﻿
-
 namespace GoogleARCore.Examples.HelloAR
 {
     using System.Collections.Generic;
@@ -7,6 +6,7 @@ namespace GoogleARCore.Examples.HelloAR
     using GoogleARCore.Examples.Common;
     using UnityEngine;
     using System;
+   
     using UnityEngine.UI;
     using UnityEngine.SceneManagement;
  
@@ -30,7 +30,7 @@ namespace GoogleARCore.Examples.HelloAR
         public GameObject DetectedPlanePrefab;
         public AudioSource Audio;
         public GameObject[] arrayofObject;
-        public List<AudioClip> audiolist;
+       
         public Button startButton;
         public List<int> list;
         public Text scoreText;
@@ -42,7 +42,7 @@ namespace GoogleARCore.Examples.HelloAR
 
         private Boolean testPossible = false;
         private Boolean detected = false, tested = false;
-        GameObject andyObject;
+        GameObject andyObject, model1, model2, model3;
         int totalobjectallowed = 1;
         int objectspawn = 0;
         private GameObject object1, object2, object3;
@@ -54,34 +54,71 @@ namespace GoogleARCore.Examples.HelloAR
         private List<DetectedPlane> m_AllPlanes = new List<DetectedPlane>();
         private bool m_IsQuitting = false;
         private string modelname;
-        private string url;
+        private string url= "http://importantfile.ourcuet.com/assetbundle/model_test01";
         int buttonclickCounter = 0;
         private Boolean zoompossible = false;
         int scoreCounter = 0;
         int i = 0;
         private GameObject temp_model;
+        WWW www;
+        private Boolean found = false;
+        string[] model_array;
+        private AssetBundle bundle, modelbundle;
+
+        private  string urlarray= "http://importantfile.ourcuet.com/GoogleARCore/getallmodel.php";
+       
 
 
 
-
-        //Start Function;
-
-        private void Start()
+        public void Start()
         {
-
-            while (hashSet.Count < 10)
+            
+           while (hashSet.Count < 10)
             {
-                int x = UnityEngine.Random.Range(0, 11);
+                int x = UnityEngine.Random.Range(0, 30);
                 hashSet.Add(x);
             }
             list = new List<int>(hashSet);
             startButton.onClick.AddListener(() => startTest());
-
+            StartCoroutine(loadModel());
+           
         }
 
 
 
 
+
+        //downloading model from server of cache
+        IEnumerator loadModel()
+        {
+            if (PlayerPrefs.GetString("allmodel").Equals(""))
+            {
+
+                print("Data is loading From server");
+                WWW catagoryitem = new WWW(urlarray);
+                yield return catagoryitem;
+                string loadedString = catagoryitem.text;
+
+                model_array = loadedString.Split(';');
+
+                saveScript.SaveStringArray("catagory", model_array.Length - 1, model_array);
+                WWW audioreq = new WWW(url);
+
+                PlayerPrefs.SetString("allmodel", "notNullnow");
+
+            }
+            else
+            {
+                model_array = saveScript.GetStringArray("allmodel");
+            }
+
+
+        }
+
+
+       
+
+        
 
         public void Update()
         {
@@ -94,24 +131,16 @@ namespace GoogleARCore.Examples.HelloAR
             }
            
             _UpdateApplicationLifecycle();
-
-            // Hide snackbar when currently tracking at least one plane.
-
             Session.GetTrackables<DetectedPlane>(m_AllPlanes);
+             bool showSearchingUI = true;
 
-
-            bool showSearchingUI = true;
-
-
-            if (m_AllPlanes[0].TrackingState == TrackingState.Tracking)
+            
+            if (m_AllPlanes.Count>0)
             {
+                
                 showSearchingUI = false;
                 detected = true;
-
-              
-             
                 startButton.GetComponentInChildren<Text>().text = "Next";
-
 
             }
             if (showSearchingUI == false)
@@ -125,9 +154,10 @@ namespace GoogleARCore.Examples.HelloAR
         private void startTest()
         {
             tested = true;
-            if (buttonclickCounter == 12)
+            if (buttonclickCounter == 11)
             {
-
+                PlayerPrefs.SetInt("TotalScore", scoreCounter);
+                
                 SceneManager.LoadScene("03-Score");
                 
             }
@@ -137,6 +167,8 @@ namespace GoogleARCore.Examples.HelloAR
 
                 buttonclickCounter++;
 
+              
+
                 if (object1 != null || object2 != null || object3 != null)
                 {
                     Destroy(object1);
@@ -144,23 +176,28 @@ namespace GoogleARCore.Examples.HelloAR
                     Destroy(object3);
                 }
                 correctModelNumber = list[buttonclickCounter];
-                Audio.clip = audiolist[correctModelNumber];
-                Audio.Play();
+               
 
                 if (detected == true)
                 {
-                    int a = UnityEngine.Random.Range(0, 11);
-                    int b = UnityEngine.Random.Range(0, 11);
+                    AudioClip myclip = (AudioClip)bundle.LoadAsset(model_array[correctModelNumber]);
+
+                    Audio.clip = myclip;
+                    Audio.Play();
+
+                    int a = UnityEngine.Random.Range(0, 30);
+                    int b = UnityEngine.Random.Range(0, 30);
 
                     while (a == correctModelNumber)
                     {
-                        a = UnityEngine.Random.Range(0, 7);
+                        a = UnityEngine.Random.Range(0, 30);
                     }
                     while (b == correctModelNumber)
                     {
-                        b = UnityEngine.Random.Range(0, 7);
+                        b = UnityEngine.Random.Range(0, 30);
                     }
 
+                    setmodel(a, b);
                     int position  = UnityEngine.Random.Range(1, 3);
 
 
@@ -170,31 +207,29 @@ namespace GoogleARCore.Examples.HelloAR
 
                     if (position == 1)
                     {
-                        object1 = Instantiate(arrayofObject[correctModelNumber], pos, FirstPersonCamera.transform.rotation);
-                        object2 = Instantiate(arrayofObject[a], pos1, FirstPersonCamera.transform.rotation);
-                        object3 = Instantiate(arrayofObject[b], pos2, FirstPersonCamera.transform.rotation);
+                        object1 = Instantiate(model, pos, FirstPersonCamera.transform.rotation);
+                        object2 = Instantiate(model2, pos1, FirstPersonCamera.transform.rotation);
+                        object3 = Instantiate(model3, pos2, FirstPersonCamera.transform.rotation);
 
                     }
                     else if(position==2)
                     {
-                        object1 = Instantiate(arrayofObject[correctModelNumber], pos1, FirstPersonCamera.transform.rotation);
-                        object2 = Instantiate(arrayofObject[a], pos, FirstPersonCamera.transform.rotation);
-                        object3 = Instantiate(arrayofObject[b], pos2, FirstPersonCamera.transform.rotation);
+                        object1 = Instantiate(model1, pos1, FirstPersonCamera.transform.rotation);
+                        object2 = Instantiate(model2, pos, FirstPersonCamera.transform.rotation);
+                        object3 = Instantiate(model3, pos2, FirstPersonCamera.transform.rotation);
 
                     }
                     else if (position==3)
                     {
-                        object1 = Instantiate(arrayofObject[correctModelNumber], pos2, FirstPersonCamera.transform.rotation);
-                        object2 = Instantiate(arrayofObject[a], pos1, FirstPersonCamera.transform.rotation);
-                        object3 = Instantiate(arrayofObject[b], pos, FirstPersonCamera.transform.rotation);
+                        object1 = Instantiate(model1, pos2, FirstPersonCamera.transform.rotation);
+                        object2 = Instantiate(model2, pos1, FirstPersonCamera.transform.rotation);
+                        object3 = Instantiate(model3, pos, FirstPersonCamera.transform.rotation);
 
                     }
                     temp_model = object1;
 
                     //small the size..
-                    object1.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-                    object2.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-                    object3.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+                   
                     zoompossible = true;
                    
 
@@ -282,6 +317,13 @@ namespace GoogleARCore.Examples.HelloAR
             }
         }
 
+        void setmodel(int a, int b)
+        {
+            model1 = (GameObject)modelbundle.LoadAsset(model_array[correctModelNumber]);
+            model2= (GameObject)modelbundle.LoadAsset(model_array[a]);
+            model3 = (GameObject)modelbundle.LoadAsset(model_array[b]);
+
+        }
 
 
 
@@ -361,13 +403,7 @@ namespace GoogleARCore.Examples.HelloAR
             }
           
         }
-
-
-     
-
-
-
-
+        
     }
 }  
 

@@ -1,10 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Firebase;
+
 using System;
-using Firebase.Database;
-using Firebase.Unity.Editor;
+
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
@@ -18,84 +17,85 @@ public class ParseSubCatagory : MonoBehaviour {
     private String AssetName ;
     public GameObject buttonPrefab;
     public Transform buttonContainer;
+    public Text testt;
 
-   
+    public string[] model_array;
+    string url = "http://importantfile.ourcuet.com/GoogleARCore/getSubcatagory.php";
 
 
-
-
-    DependencyStatus dependencyStatus = DependencyStatus.UnavailableOther;
-    protected virtual void Start()
+    public void Start()
     {
-        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task => {
-            dependencyStatus = task.Result;
-            if (dependencyStatus == DependencyStatus.Available)
-            {
-                InitializeFirebase();
-
-            }
-            else
-            {
-                Debug.LogError(
-                  "Could not resolve all Firebase dependencies: " + dependencyStatus);
-            }
-        });
+        StartCoroutine(LoadSubCatagory());
 
     }
-    protected virtual void InitializeFirebase()
-    {
-        FirebaseApp app = FirebaseApp.DefaultInstance;
 
-        app.SetEditorDatabaseUrl("https://arzoo-c2f52.firebaseio.com/");
-        if (app.Options.DatabaseUrl != null)
-            app.SetEditorDatabaseUrl(app.Options.DatabaseUrl);
-            StartListener();
 
-    }
-    void StartListener()
+
+
+    IEnumerator LoadSubCatagory()
     {
-        FirebaseDatabase.DefaultInstance
-        .GetReference(PlayerPrefs.GetString("saveName"))
-        .GetValueAsync().ContinueWith(task => {
-            if (task.IsFaulted)
+        PlayerPrefs.SetString("modelName", null);
+
+
+        if (PlayerPrefs.GetString("modelName").Equals(""))
+        {
+          
+            //download data from server
+            print("Data is loading From server");
+            WWWForm form = new WWWForm();
+
+            string temp = PlayerPrefs.GetString("saveName");
+            if(temp[0].Equals(" "))
             {
-
+                temp = "Bird";
             }
-            else if (task.IsCompleted)
-            {
-                if (task.Result != null && task.Result.ChildrenCount > 0)
-                {
-                    foreach (var childSnapshot in task.Result.Children)
-                    {
-                     
+            form.AddField("catagory_name", temp);
 
-                        GameObject button = Instantiate(buttonPrefab) as GameObject;
-                        button.transform.SetParent(buttonContainer,true);
+            WWW catagoryitem = new WWW(url,form);
+            yield return catagoryitem;
+            string loadedString = catagoryitem.text;
 
-                        button.GetComponentInChildren<Text>().text = childSnapshot.Child("name").Value.ToString();
-                        button.GetComponent<Button>().onClick.AddListener(() => btnclick(childSnapshot.Child("name").Value.ToString()));
+            model_array = loadedString.Split(';');
 
-                    }
-                }
-            }
-        });
+            saveScript.SaveStringArray("model", model_array.Length - 1, model_array);
+            buttonSetup();
+            PlayerPrefs.SetString("modelName", "notNullnow");
+            testt.text = model_array.Length + "";
+
+        }
+        else
+        {
+           
+            model_array = saveScript.GetStringArray("model");
+            buttonSetup();
+        }
     }
-   public void btnclick(string name)
+
+
+    public void btnclick(Button btn )
     {
-        PlayerPrefs.SetString("saveModel", name);
-        SceneManager.LoadScene("HelloAR 1");
+        PlayerPrefs.SetString("saveModel", btn.name);
+        SceneManager.LoadScene("03-ARScene");
         
 
     }
    
 
-    // Update is called once per frame
-    void Update()
+
+    private void buttonSetup()
     {
+        for (int i = 0; i < model_array.Length; i++)
+        {
+            GameObject button = Instantiate(buttonPrefab) as GameObject;
+            Button btn = button.GetComponent<Button>();
+            btn.name = model_array[i];
+            button.transform.SetParent(buttonContainer, true);
+            button.GetComponentInChildren<Text>().text = model_array[i];
+            button.GetComponent<Button>().onClick.AddListener(() => btnclick(btn));
+
+        }
 
     }
-
-   
 
 
 

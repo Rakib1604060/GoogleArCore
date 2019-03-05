@@ -1,4 +1,5 @@
 ﻿
+
 namespace GoogleARCore.Examples.HelloAR
 {
     using System.Collections.Generic;
@@ -6,9 +7,7 @@ namespace GoogleARCore.Examples.HelloAR
     using GoogleARCore.Examples.Common;
     using UnityEngine;
     using System;
-   
     using UnityEngine.UI;
-    using UnityEngine.SceneManagement;
  
 
     using System.Collections;
@@ -30,19 +29,19 @@ namespace GoogleARCore.Examples.HelloAR
         public GameObject DetectedPlanePrefab;
         public AudioSource Audio;
         public GameObject[] arrayofObject;
-       
+        public List<AudioClip> audiolist;
         public Button startButton;
         public List<int> list;
-        public Text scoreText;
-    
+        public Text xtext;
+
 
 
 
         //private and Other Variables Initializing
 
         private Boolean testPossible = false;
-        private Boolean detected = false, tested = false;
-        GameObject andyObject, model1, model2, model3;
+        private Boolean detected = false;
+        GameObject andyObject;
         int totalobjectallowed = 1;
         int objectspawn = 0;
         private GameObject object1, object2, object3;
@@ -54,93 +53,62 @@ namespace GoogleARCore.Examples.HelloAR
         private List<DetectedPlane> m_AllPlanes = new List<DetectedPlane>();
         private bool m_IsQuitting = false;
         private string modelname;
-        private string url= "http://importantfile.ourcuet.com/assetbundle/model_test01";
+        private string url;
         int buttonclickCounter = 0;
-        private Boolean zoompossible = false;
-        int scoreCounter = 0;
+
         int i = 0;
-        private GameObject temp_model;
-        WWW www;
-        private Boolean found = false;
-        string[] model_array;
-        private AssetBundle bundle, modelbundle;
-
-        private  string urlarray= "http://importantfile.ourcuet.com/GoogleARCore/getallmodel.php";
-       
 
 
 
-        public void Start()
+
+
+        //Start Function;
+
+        private void Start()
         {
-            
-           while (hashSet.Count < 10)
+            xtext.text = 0 + "";
+
+            while (hashSet.Count < 6)
             {
-                int x = UnityEngine.Random.Range(0, 30);
+                int x = UnityEngine.Random.Range(0, 7);
                 hashSet.Add(x);
             }
             list = new List<int>(hashSet);
             startButton.onClick.AddListener(() => startTest());
-            StartCoroutine(loadModel());
-           
-        }
-
-
-
-
-
-        //downloading model from server of cache
-        IEnumerator loadModel()
-        {
-            if (PlayerPrefs.GetString("allmodel").Equals(""))
-            {
-
-                print("Data is loading From server");
-                WWW catagoryitem = new WWW(urlarray);
-                yield return catagoryitem;
-                string loadedString = catagoryitem.text;
-
-                model_array = loadedString.Split(';');
-
-                saveScript.SaveStringArray("catagory", model_array.Length - 1, model_array);
-                WWW audioreq = new WWW(url);
-
-                PlayerPrefs.SetString("allmodel", "notNullnow");
-
-            }
-            else
-            {
-                model_array = saveScript.GetStringArray("allmodel");
-            }
-
 
         }
 
 
-       
 
-        
+
 
         public void Update()
         {
-            
-
-            if (zoompossible)
+            if (object1 != null)
             {
-                 measure();
+                measure();
                 _PinchtoZoom();
-            }
-           
-            _UpdateApplicationLifecycle();
-            Session.GetTrackables<DetectedPlane>(m_AllPlanes);
-             bool showSearchingUI = true;
-
-            
-            if (m_AllPlanes.Count>0)
-            {
                 
+
+            }
+               
+            
+            _UpdateApplicationLifecycle();
+
+            // Hide snackbar when currently tracking at least one plane.
+            Session.GetTrackables<DetectedPlane>(m_AllPlanes);
+
+
+            bool showSearchingUI = true;
+
+
+            if (m_AllPlanes[0].TrackingState == TrackingState.Tracking)
+            {
                 showSearchingUI = false;
                 detected = true;
+             
                 startButton.GetComponentInChildren<Text>().text = "Next";
+
 
             }
             if (showSearchingUI == false)
@@ -153,91 +121,48 @@ namespace GoogleARCore.Examples.HelloAR
 
         private void startTest()
         {
-            tested = true;
-            if (buttonclickCounter == 11)
+            buttonclickCounter++;
+
+            if (object1 != null || object2 != null || object3 != null)
             {
-                PlayerPrefs.SetInt("TotalScore", scoreCounter);
-                
-                SceneManager.LoadScene("03-Score");
-                
+                Destroy(object1);
+                Destroy(object2);
+                Destroy(object3);
             }
+            correctModelNumber = list[buttonclickCounter];
+            Audio.clip = audiolist[correctModelNumber];
+            Audio.Play();
 
-            if (buttonclickCounter < 12)
+            if (detected == true )
             {
+                int a = UnityEngine.Random.Range(0, 7);
+                int b = UnityEngine.Random.Range(0, 7);
 
-                buttonclickCounter++;
-
-              
-
-                if (object1 != null || object2 != null || object3 != null)
+                while (a == correctModelNumber)
                 {
-                    Destroy(object1);
-                    Destroy(object2);
-                    Destroy(object3);
+                    a = UnityEngine.Random.Range(0, 7);
                 }
-                correctModelNumber = list[buttonclickCounter];
-               
-
-                if (detected == true)
+                while (b == correctModelNumber)
                 {
-                    AudioClip myclip = (AudioClip)bundle.LoadAsset(model_array[correctModelNumber]);
-
-                    Audio.clip = myclip;
-                    Audio.Play();
-
-                    int a = UnityEngine.Random.Range(0, 30);
-                    int b = UnityEngine.Random.Range(0, 30);
-
-                    while (a == correctModelNumber)
-                    {
-                        a = UnityEngine.Random.Range(0, 30);
-                    }
-                    while (b == correctModelNumber)
-                    {
-                        b = UnityEngine.Random.Range(0, 30);
-                    }
-
-                    setmodel(a, b);
-                    int position  = UnityEngine.Random.Range(1, 3);
-
-
-                    Vector3 pos = m_AllPlanes[0].CenterPose.position;
-                    Vector3 pos1 = new Vector3(m_AllPlanes[0].CenterPose.position.x+1f , m_AllPlanes[0].CenterPose.position.y, m_AllPlanes[0].CenterPose.position.z + 0.5f);
-                    Vector3 pos2 = new Vector3(m_AllPlanes[0].CenterPose.position.x-1f, m_AllPlanes[0].CenterPose.position.y, m_AllPlanes[0].CenterPose.position.z - 0.5f);
-
-                    if (position == 1)
-                    {
-                        object1 = Instantiate(model, pos, FirstPersonCamera.transform.rotation);
-                        object2 = Instantiate(model2, pos1, FirstPersonCamera.transform.rotation);
-                        object3 = Instantiate(model3, pos2, FirstPersonCamera.transform.rotation);
-
-                    }
-                    else if(position==2)
-                    {
-                        object1 = Instantiate(model1, pos1, FirstPersonCamera.transform.rotation);
-                        object2 = Instantiate(model2, pos, FirstPersonCamera.transform.rotation);
-                        object3 = Instantiate(model3, pos2, FirstPersonCamera.transform.rotation);
-
-                    }
-                    else if (position==3)
-                    {
-                        object1 = Instantiate(model1, pos2, FirstPersonCamera.transform.rotation);
-                        object2 = Instantiate(model2, pos1, FirstPersonCamera.transform.rotation);
-                        object3 = Instantiate(model3, pos, FirstPersonCamera.transform.rotation);
-
-                    }
-                    temp_model = object1;
-
-                    //small the size..
-                   
-                    zoompossible = true;
-                   
-
+                    b = UnityEngine.Random.Range(0, 7);
                 }
 
-            }
+                Vector3 pos = m_AllPlanes[0].CenterPose.position;
+                
+                Vector3 pos1 = new Vector3(m_AllPlanes[0].CenterPose.position.x + 0.5f, m_AllPlanes[0].CenterPose.position.y, m_AllPlanes[0].CenterPose.position.z);
+                Vector3 pos2 = new Vector3(m_AllPlanes[0].CenterPose.position.x -0.5f, m_AllPlanes[0].CenterPose.position.y, m_AllPlanes[0].CenterPose.position.z);
+                
+                object1.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+                object2.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+                object3.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
-            
+                object1 = Instantiate(arrayofObject[correctModelNumber], pos, FirstPersonCamera.transform.rotation);
+                object2 = Instantiate(arrayofObject[a], pos1, FirstPersonCamera.transform.rotation);
+                object3 = Instantiate(arrayofObject[b], pos2, FirstPersonCamera.transform.rotation);
+
+
+
+            }
            
 
         }
@@ -245,12 +170,6 @@ namespace GoogleARCore.Examples.HelloAR
       
         private void _UpdateApplicationLifecycle()
         {
-            if (testPossible)
-            {
-                CorrectOrNot(); 
-
-            }
-       
             // Exit the app when the 'back' button is pressed.
             if (Input.GetKey(KeyCode.Escape))
             {
@@ -260,7 +179,7 @@ namespace GoogleARCore.Examples.HelloAR
             // Only allow the screen to sleep when not tracking.
             if (Session.Status != SessionStatus.Tracking)
             {
-                const int lostTrackingSleepTimeout = 60;
+                const int lostTrackingSleepTimeout = 15;
                 Screen.sleepTimeout = lostTrackingSleepTimeout;
             }
             else
@@ -317,47 +236,11 @@ namespace GoogleARCore.Examples.HelloAR
             }
         }
 
-        void setmodel(int a, int b)
-        {
-            model1 = (GameObject)modelbundle.LoadAsset(model_array[correctModelNumber]);
-            model2= (GameObject)modelbundle.LoadAsset(model_array[a]);
-            model3 = (GameObject)modelbundle.LoadAsset(model_array[b]);
-
-        }
-
-
-
-        void CorrectOrNot()
-        {
-
-            float dist1 = Vector3.Distance(FirstPersonCamera.transform.position, object1.transform.position);
-            float dist2 = Vector3.Distance(FirstPersonCamera.transform.position, object2.transform.position);
-            float dist3 = Vector3.Distance(FirstPersonCamera.transform.position, object3.transform.position);
-
-            if (dist1 < .9f&& tested==true)
-            {
-                  tested = false;
-                
-                    scoreCounter++;
-                    scoreText.text = scoreCounter + "";
-                  
-
-                
-               
-            }
-            else if (dist2 < .9f || dist3 < .9f&&tested==true)
-            {
-                tested = false;
-            }
-          
-
-        }
-
       
 
         public void measure()
         {
-            float dist = Vector3.Distance(FirstPersonCamera.transform.position, object1.transform.position);
+            float dist = Vector3.Distance(FirstPersonCamera.transform.position, andyObject.transform.position);
             
         }
 
@@ -403,7 +286,10 @@ namespace GoogleARCore.Examples.HelloAR
             }
           
         }
-        
-    }
-}  
+
+    
+
+
+
+    }}  
 

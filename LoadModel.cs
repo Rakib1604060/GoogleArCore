@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using GoogleARCore;
-using UnityEngine.UI;
-
 using GoogleARCore.Examples.Common;
 
 
@@ -11,19 +9,15 @@ using GoogleARCore.Examples.Common;
 public class LoadModel : MonoBehaviour {
 
     public Camera FirstPersonCamera;
-    public AudioClip[] audioclips;
-    public Text testtext;
-    public Button replayButton, BackButton;
 
     public GameObject DetectedPlanePrefab;
     int iy = 0;
-    int totalobjectallowed = 10;
+    int totalobjectallowed = 1;
     int totalojectspawn = 0;
-    public static GameObject model;
+    public GameObject model;
 
     float prevTouchDistance;
     float zoomSpeed = 0.2f;
-    public AudioSource myaudiosource;
 
 
     private GameObject ourmodel;
@@ -32,75 +26,53 @@ public class LoadModel : MonoBehaviour {
 
     public GameObject SearchingForPlaneUI;
 
-    AudioClip modelaudio;
 
     private const float k_ModelRotation = 180.0f;
 
-    public static AssetBundle mybundle;
-
+   
     private List<DetectedPlane> m_AllPlanes = new List<DetectedPlane>();
-     
-    string url = "http://importantfile.ourcuet.com/assetbundle/model_test01";
+
   
-
-    WWW www;
-
     private bool m_IsQuitting = false;
 
-    public void  Start()
+   
+    void Start()
     {
-        replayButton.onClick.AddListener(() => Replay());
-        BackButton.onClick.AddListener(() => Back());
-        replayButton.enabled = false;
-        testtext.text = "Start FUnction";
-        StartCoroutine(loadModel());
-
-
+        string url = "http://rakib.ourcuet.com/StandaloneWindows/"+PlayerPrefs.GetString("saveModel");
+        WWW www = new WWW(url);
+        StartCoroutine(WaitForReq(www));
     }
 
-    IEnumerator loadModel()
+
+    IEnumerator WaitForReq(WWW www)
     {
-       
-        while (!Caching.ready)
-            yield return null;
-
-        using (www = WWW.LoadFromCacheOrDownload(url, 1))
+        yield return www;
+        AssetBundle bundle = www.assetBundle;
+        if (www.error == null)
         {
-            yield return www;
+            model = (GameObject)bundle.LoadAsset(PlayerPrefs.GetString("saveModel"));
           
-            if (!string.IsNullOrEmpty(www.error))
-            {
-                Debug.Log(www.error);
-                yield return null;
-            }
-
-
-            mybundle = www.assetBundle;
-            string model_name = PlayerPrefs.GetString("saveModel");
-
-            model = (GameObject)mybundle.LoadAsset(model_name);
-            testtext.text = PlayerPrefs.GetString("saveModel");
-           
-           
+        }
+        else
+        {
+            Debug.Log(www.error);
         }
     }
 
-     
-
-  public void Update()
+    public void Update()
     {
-
-       
         if (Input.touchCount != 0)
         {
             _PinchtoZoom();
         }
 
       
+
+
+
         _UpdateApplicationLifecycle();
 
         // Hide snackbar when currently tracking at least one plane.
-
         Session.GetTrackables<DetectedPlane>(m_AllPlanes);
         bool showSearchingUI = true;
         for (int i = 0; i < m_AllPlanes.Count; i++)
@@ -115,7 +87,6 @@ public class LoadModel : MonoBehaviour {
         SearchingForPlaneUI.SetActive(showSearchingUI);
 
         // If the player has not touched the screen, we are done with this update.
-
         Touch touch;
         if (Input.touchCount < 1 || (touch = Input.GetTouch(0)).phase != TouchPhase.Began)
         {
@@ -123,7 +94,6 @@ public class LoadModel : MonoBehaviour {
         }
 
         // Raycast against the location the player touched to search for planes.
-
         TrackableHit hit;
         TrackableHitFlags raycastFilter = TrackableHitFlags.PlaneWithinPolygon |
             TrackableHitFlags.FeaturePointWithSurfaceNormal;
@@ -144,7 +114,7 @@ public class LoadModel : MonoBehaviour {
                 GameObject prefab;
                 if (hit.Trackable is FeaturePoint)
                 {
-                    prefab = model;
+                    prefab = AndyPointPrefab;
                 }
                 else
                 {
@@ -152,18 +122,21 @@ public class LoadModel : MonoBehaviour {
                 }
 
                 // Instantiate Andy model at the hit pose.
-                if (totalojectspawn < totalobjectallowed)
+               if( totalojectspawn<totalobjectallowed)
                 {
-                    PlaySound();
                     ourmodel = Instantiate(prefab, hit.Pose.position, hit.Pose.rotation);
                     ourmodel.transform.Rotate(0, k_ModelRotation, 0, Space.Self);
                     var anchor = hit.Trackable.CreateAnchor(hit.Pose);
 
-
                     // Make Andy model a child of the anchor.
                     ourmodel.transform.parent = anchor.transform;
                     totalojectspawn++;
-                     }
+
+                }
+                    
+
+                
+              
 
              
                
@@ -174,9 +147,6 @@ public class LoadModel : MonoBehaviour {
     /// <summary>
     /// Check and update the application lifecycle.
     /// </summary>
-    /// 
-
-
     private void _UpdateApplicationLifecycle()
     {
         // Exit the app when the 'back' button is pressed.
@@ -272,52 +242,10 @@ public class LoadModel : MonoBehaviour {
 
 
         }
-
-       
-    }
-
-    //Play the Audio from the Array
-
-    private void PlaySound()
-    {
-        string model_name = PlayerPrefs.GetString("saveModel");
-
-        for(int i = 0; i < audioclips.Length; i++)
-        {
-            if (model_name.Equals(audioclips[i].name,System.StringComparison.InvariantCultureIgnoreCase))
-            {
-                myaudiosource.clip = audioclips[i];
-                replayButton.enabled = true ;
-
-                myaudiosource.Play();
-                break;
-            }
-        }
     }
 
 
 
-    // Replay button click
-    private void Replay()
-    {
-        myaudiosource.Play();
-    }
-
-    //Back Button Press Function
-
-    private void Back()
-    {
-        
-        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
-    }
-
-    public static void sendmodel()
-    {
-        string model_name = PlayerPrefs.GetString("saveModel");
-        model = (GameObject)mybundle.LoadAsset(model_name);
-
-  
-    }
 
 
 }
